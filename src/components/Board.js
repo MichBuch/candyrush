@@ -1,4 +1,4 @@
-"use client"; // Client component
+"use client";
 
 import { useState, useEffect } from 'react';
 import styles from './Board.module.css';
@@ -7,50 +7,55 @@ import { useGameLogic } from '../hooks/useGameLogic';
 
 const Board = () => {
     const { board, score, setBoard } = useGameLogic();
-    const [draggedCandy, setDraggedCandy] = useState(null);
-    const [replacedCandy, setReplacedCandy] = useState(null);
+    const [selectedCandyIndex, setSelectedCandyIndex] = useState(null);
+    const [isClient, setIsClient] = useState(false);
 
-    const dragStart = (e) => {
-        setDraggedCandy(e.target);
-    };
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
-    const dragDrop = (e) => {
-        setReplacedCandy(e.target);
-    };
-
-    const dragEnd = () => {
-        if (!draggedCandy || !replacedCandy) return;
-
-        const draggedId = parseInt(draggedCandy.getAttribute('data-id'));
-        const replacedId = parseInt(replacedCandy.getAttribute('data-id'));
-
-        const validMoves = [
-            draggedId - 1,
-            draggedId + 1,
-            draggedId - 8,
-            draggedId + 8
-        ];
-
-        const validMove = validMoves.includes(replacedId);
-
-        if (validMove) {
-            const newBoard = [...board];
-            newBoard[replacedId] = board[draggedId];
-            newBoard[draggedId] = board[replacedId];
-            setBoard(newBoard);
-            // TODO: Check if swap resulted in match, if not revert? 
-            // Currently simplified to allow swaps.
+    const handleCandyClick = (index) => {
+        // If nothing selected, select the first one
+        if (selectedCandyIndex === null) {
+            setSelectedCandyIndex(index);
+            return;
         }
 
-        setDraggedCandy(null);
-        setReplacedCandy(null);
+        // If clicking the same one, deselect
+        if (selectedCandyIndex === index) {
+            setSelectedCandyIndex(null);
+            return;
+        }
+
+        // Check adjacency
+        const validMoves = [
+            selectedCandyIndex - 1,
+            selectedCandyIndex + 1,
+            selectedCandyIndex - 8,
+            selectedCandyIndex + 8
+        ];
+
+        if (validMoves.includes(index)) {
+            // Swap
+            const newBoard = [...board];
+            const temp = newBoard[index];
+            newBoard[index] = newBoard[selectedCandyIndex];
+            newBoard[selectedCandyIndex] = temp;
+            setBoard(newBoard);
+            setSelectedCandyIndex(null);
+        } else {
+            // If invalid move, just select the new one
+            setSelectedCandyIndex(index);
+        }
     };
 
+    if (!isClient) return <div className={styles.loading}>Loading Game...</div>;
 
     return (
         <div className={styles.boardContainer}>
-            <div className="score-board">
+            <div className="score-board" style={{ marginBottom: '20px', color: 'white', textAlign: 'center' }}>
                 <h2>Score: {score}</h2>
+                <p style={{ fontSize: '14px', opacity: 0.8 }}>Tap two adjacent candies to swap!</p>
             </div>
             <div className={styles.grid}>
                 {board.map((color, index) => (
@@ -58,9 +63,8 @@ const Board = () => {
                         key={index}
                         candyIndex={index}
                         color={color}
-                        dragStart={dragStart}
-                        dragDrop={dragDrop}
-                        dragEnd={dragEnd}
+                        isSelected={selectedCandyIndex === index}
+                        onClick={handleCandyClick}
                     />
                 ))}
             </div>
