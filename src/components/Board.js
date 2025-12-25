@@ -1,4 +1,4 @@
-"use client";
+"use client"; // Updated for mobile controls
 
 import { useState, useEffect } from 'react';
 import styles from './Board.module.css';
