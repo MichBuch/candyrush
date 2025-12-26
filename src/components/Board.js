@@ -1,4 +1,4 @@
-"use client"; // Updated for mobile controls
+"use client";
 
 import { useState, useEffect } from 'react';
 import styles from './Board.module.css';
@@ -15,47 +15,46 @@ const Board = () => {
     }, []);
 
     const handleCandyClick = (index) => {
-        // If nothing selected, select the first one
         if (selectedCandyIndex === null) {
             setSelectedCandyIndex(index);
-            return;
-        }
-
-        // If clicking the same one, deselect
-        if (selectedCandyIndex === index) {
-            setSelectedCandyIndex(null);
-            return;
-        }
-
-        // Check adjacency
-        const validMoves = [
-            selectedCandyIndex - 1,
-            selectedCandyIndex + 1,
-            selectedCandyIndex - 8,
-            selectedCandyIndex + 8
-        ];
-
-        if (validMoves.includes(index)) {
-            // Swap
-            const newBoard = [...board];
-            const temp = newBoard[index];
-            newBoard[index] = newBoard[selectedCandyIndex];
-            newBoard[selectedCandyIndex] = temp;
-            setBoard(newBoard);
+        } else if (selectedCandyIndex === index) {
             setSelectedCandyIndex(null);
         } else {
-            // If invalid move, just select the new one
-            setSelectedCandyIndex(index);
+            const validMoves = [
+                selectedCandyIndex - 1,
+                selectedCandyIndex + 1,
+                selectedCandyIndex - 8,
+                selectedCandyIndex + 8
+            ];
+
+            // Allow swap attempts even if invalid logic might reject (handled by game logic hook ideally, but here simplicity)
+            // But strict masking for adjacent:
+            if (validMoves.includes(index)) {
+                // Perform local swap logic - triggering state update
+                const newBoard = [...board];
+                const temp = newBoard[index];
+                newBoard[index] = newBoard[selectedCandyIndex];
+                newBoard[selectedCandyIndex] = temp;
+                setBoard(newBoard);
+                setSelectedCandyIndex(null);
+            } else {
+                setSelectedCandyIndex(index);
+            }
         }
     };
 
-    if (!isClient) return <div className={styles.loading}>Loading Game...</div>;
+    if (!isClient) return <div className={styles.loading}>Loading...</div>;
 
     return (
         <div className={styles.boardContainer}>
-            <div className="score-board" style={{ marginBottom: '20px', color: 'white', textAlign: 'center' }}>
-                <h2>Score: {score}</h2>
-                <p style={{ fontSize: '14px', opacity: 0.8 }}>Tap two adjacent candies to swap!</p>
+            <div className={styles.uiPanel}>
+                <h2 className={styles.scoreTitle}>Score: {score}</h2>
+                <div className={styles.instructions}>
+                    <p><strong>How to Play:</strong></p>
+                    <p>1. Tap a candy to select it.</p>
+                    <p>2. Tap an adjacent candy to swap.</p>
+                    <p>3. Match 3 or more colors!</p>
+                </div>
             </div>
             <div className={styles.grid}>
                 {board.map((color, index) => (

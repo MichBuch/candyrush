@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const WIDTH = 8;
 const CANDY_colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
@@ -17,7 +17,9 @@ export const useGameLogic = () => {
     const [score, setScore] = useState(0);
     const [isClient, setIsClient] = useState(false);
 
-    // Initialize on client only to prevent hydration mismatch
+    // Prevent infinite loops with manual processing flag? 
+    // Effect chain is safer.
+
     useEffect(() => {
         setIsClient(true);
         setBoard(createBoard());
@@ -25,29 +27,15 @@ export const useGameLogic = () => {
 
     const checkForMatches = useCallback(() => {
         let matches = [];
-        const notValid = [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55, 62, 63];
-
-        // Horizontal matches
+        // Horizontal
         for (let i = 0; i < 64; i++) {
-            const rowOfThree = [i, i + 1, i + 2];
-            const rowOfFour = [i, i + 1, i + 2, i + 3];
-
-            // Check 4
-            if (notValid.indexOf(i) === -1 && (i + 3) % WIDTH >= 3 && board[i]) {
-                if (rowOfFour.every(square => board[square] === board[i])) {
-                    // matches.push(...rowOfFour); // Simplification, sticking to 3s logic for robustness first
-                }
-            }
-
-            // Check 3
             if (i % WIDTH < WIDTH - 2) {
                 if (board[i] && board[i] === board[i + 1] && board[i] === board[i + 2]) {
                     matches.push(i, i + 1, i + 2);
                 }
             }
         }
-
-        // Vertical matches
+        // Vertical
         for (let i = 0; i <= 47; i++) {
             if (board[i] && board[i] === board[i + WIDTH] && board[i] === board[i + WIDTH * 2]) {
                 matches.push(i, i + WIDTH, i + WIDTH * 2);
@@ -57,6 +45,7 @@ export const useGameLogic = () => {
         const uniqueMatches = [...new Set(matches)];
 
         if (uniqueMatches.length > 0) {
+            console.log("Matches found:", uniqueMatches);
             const newBoard = [...board];
             uniqueMatches.forEach(index => newBoard[index] = '');
             setBoard(newBoard);
@@ -67,29 +56,42 @@ export const useGameLogic = () => {
     }, [board]);
 
     const moveCandiesDown = useCallback(() => {
-        // Only run if no matches were just handled (to allow clear animation theoretically, but here instant)
-        // Actually, we should check for moves regardless.
-
         const newBoard = [...board];
         let moved = false;
 
-        for (let i = 0; i <= 55; i++) {
-            const firstRow = [0, 1, 2, 3, 4, 5, 6, 7];
-            const isFirstRow = firstRow.includes(i);
+        // Gravity Logic
+        for (let i = 0; i < 64 - WIDTH; i++) { // Check up to second to last row
+            // We generally iterate columns bottom up or just brute force repeatedly
+            // Let's do a simple full pass. 
+            // If a square is empty, pull from above
+        }
 
-            if (isFirstRow && newBoard[i] === '') {
-                newBoard[i] = CANDY_colors[Math.floor(Math.random() * CANDY_colors.length)];
-                moved = true;
-            }
+        // Better Gravity: Loop columns
+        for (let col = 0; col < WIDTH; col++) {
+            for (let row = WIDTH - 1; row >= 0; row--) {
+                const index = col + row * WIDTH;
 
-            if (newBoard[i + WIDTH] === '') {
-                newBoard[i + WIDTH] = newBoard[i];
-                newBoard[i] = '';
-                moved = true;
+                if (newBoard[index] === '') {
+                    // Empty spot, find nearest candy above
+                    if (row === 0) {
+                        // Top row, fill random
+                        newBoard[index] = CANDY_colors[Math.floor(Math.random() * CANDY_colors.length)];
+                        moved = true;
+                    } else {
+                        // Pull from above
+                        if (newBoard[index - WIDTH] !== '') {
+                            newBoard[index] = newBoard[index - WIDTH];
+                            newBoard[index - WIDTH] = ''; // clear source
+                            moved = true;
+                        } else if (row === 0) {
+                            // Should be caught above but logic check
+                        }
+                    }
+                }
             }
         }
 
-        // Fill top row specifically if empty and not caught above (redundant but safe)
+        // Ensure top row fills if empty
         for (let i = 0; i < WIDTH; i++) {
             if (newBoard[i] === '') {
                 newBoard[i] = CANDY_colors[Math.floor(Math.random() * CANDY_colors.length)];
@@ -97,25 +99,27 @@ export const useGameLogic = () => {
             }
         }
 
-        if (moved) setBoard(newBoard);
-        return moved;
-
+        if (moved) {
+            setBoard(newBoard);
+            return true;
+        }
+        return false;
     }, [board]);
 
-    // Reactive Game Loop
+    // Game Loop
     useEffect(() => {
         if (!isClient) return;
 
-        const timer = setTimeout(() => {
+        // Using a short timeout to decouple state updates
+        const timeout = setTimeout(() => {
             const matchesFound = checkForMatches();
             if (!matchesFound) {
                 moveCandiesDown();
             }
-        }, 100); // 100ms delay to pace the game
+        }, 150);
 
-        return () => clearTimeout(timer);
+        return () => clearTimeout(timeout);
     }, [board, checkForMatches, moveCandiesDown, isClient]);
 
     return { board, score, setBoard };
 };
-

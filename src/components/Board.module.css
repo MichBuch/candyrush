@@ -6,22 +6,50 @@
     height: 100vh;
     width: 100vw;
     background-color: #222;
+    overflow: hidden;
+}
+
+.uiPanel {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #fff;
+    z-index: 10;
+}
+
+.scoreTitle {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.instructions {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
 .grid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    /* Added explicit rows */
     gap: 4px;
     background-color: #444;
     padding: 10px;
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
     width: 90vw;
-    /* Explicit width */
     max-width: 400px;
-    /* Explicit max-width */
+    /* Constrain max width for desktop */
     aspect-ratio: 1;
-    /* Maintenance of square aspect */
+}
+
+.loading {
+    color: white;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
 }
